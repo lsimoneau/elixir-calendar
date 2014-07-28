@@ -1,6 +1,8 @@
-defrecord DateTime, year: 2000, month: 1, day: 1,
-                    hour: 0, minute: 0, second: 0,
-                    nanosecond: 0, offset: { 0, 0 }
+defmodule DateTime do
+  defstruct year: 2000, month: 1, day: 1,
+            hour: 0, minute: 0, second: 0,
+            nanosecond: 0, offset: { 0, 0 }
+end
 
 defmodule Calendar do
   alias :calendar, as: C
@@ -14,9 +16,9 @@ defmodule Calendar do
     {{ year, month, day }, { hour, minute, second }} = C.now_to_universal_time(now)
     { _megasecond, _second, microsecond } = now
 
-    DateTime.new [year: year, month: month, day: day,
-                  hour: hour, minute: minute, second: second,
-                  nanosecond: microsecond * 1000, offset: { 0, 0 }]
+    %DateTime{year: year, month: month, day: day,
+              hour: hour, minute: minute, second: second,
+              nanosecond: microsecond * 1000, offset: { 0, 0 }}
   end
 
   @doc """
@@ -37,9 +39,9 @@ defmodule Calendar do
   @doc """
   Check whether the datatime is valid or not.
   """
-  def valid?(DateTime[year: year, month: month, day: day,
+  def valid?(%DateTime{year: year, month: month, day: day,
                       hour: hour, minute: minute, second: second,
-                      nanosecond: nanosecond, offset: offset]) do
+                      nanosecond: nanosecond, offset: offset}) do
     valid_date?(year, month, day) &&
     valid_hour?(hour) &&
     valid_minute?(minute) &&
@@ -51,8 +53,8 @@ defmodule Calendar do
   @doc """
   DateTime -> tuple.
   """
-  def to_tuple(DateTime[year: year, month: month, day: day,
-                        hour: hour, minute: minute, second: second]) do
+  def to_tuple(%DateTime{year: year, month: month, day: day,
+                        hour: hour, minute: minute, second: second}) do
     {{ year, month, day }, { hour, minute, second }}
   end
 
@@ -60,14 +62,14 @@ defmodule Calendar do
   tuple -> DateTime
   """
   def from_tuple({{ year, month, day }, { hour, minute, second }}) do
-    DateTime[year: year, month: month, day: day,
-             hour: hour, minute: minute, second: second]
+    %DateTime{year: year, month: month, day: day,
+             hour: hour, minute: minute, second: second}
   end
 
   @doc """
   DateTime -> unix_time
   """
-  def to_unix_time(time = DateTime[]) do
+  def to_unix_time(time = %DateTime{}) do
     (time |> change_offset({ 0, 0 }) |> to_seconds) -
       C.datetime_to_gregorian_seconds({{ 1970, 1, 1 }, { 0, 0, 0 }})
   end
@@ -84,7 +86,7 @@ defmodule Calendar do
   @doc """
   plus
   """
-  def plus(time = DateTime[], list) do
+  def plus(time = %DateTime{}, list) do
     list = Keyword.merge([years: 0, months: 0, days: 0,
                           hours: 0, minutes: 0, seconds: 0], list)
     do_plus(time, [ list[:years], list[:months], list[:days],
@@ -94,7 +96,7 @@ defmodule Calendar do
   @doc """
   minus
   """
-  def minus(time = DateTime[], list) do
+  def minus(time = %DateTime{}, list) do
     list = Keyword.merge([years: 0, months: 0, days: 0,
                           hours: 0, minutes: 0, seconds: 0], list)
     do_minus(time, [ list[:years], list[:months], list[:days],
@@ -104,28 +106,28 @@ defmodule Calendar do
   @doc """
   equal?
   """
-  def equal?(a = DateTime[], b = DateTime[]) do
+  def equal?(a = %DateTime{}, b = %DateTime{}) do
     diff_nano(a, b) == 0
   end
 
   @doc """
   is_after?
   """
-  def is_after?(a = DateTime[], b = DateTime[]) do
+  def is_after?(a = %DateTime{}, b = %DateTime{}) do
     diff_nano(a, b) > 0
   end
 
   @doc """
   is_before?
   """
-  def is_before?(a = DateTime[], b = DateTime[]) do
+  def is_before?(a = %DateTime{}, b = %DateTime{}) do
     diff_nano(a, b) < 0
   end
 
   @doc """
   Change offset.
   """
-  def change_offset(time = DateTime[offset: offset], new_o) do
+  def change_offset(time = %DateTime{offset: offset}, new_o) do
     min = round(offset_to_min(new_o) - offset_to_min(offset))
     time = plus(time, minutes: min)
     time.update(offset: new_o)
@@ -134,7 +136,7 @@ defmodule Calendar do
   @doc """
   Returns string.
   """
-  def format(time = DateTime[], string) do
+  def format(time = %DateTime{}, string) do
     do_format(time, string)
   end
 
@@ -148,7 +150,7 @@ defmodule Calendar do
   @doc """
   diff seconds
   """
-  def diff(DateTime[] = t1, DateTime[] = t2) do
+  def diff(%DateTime{} = t1, %DateTime{} = t2) do
     seconds1 = t1 |> change_offset({ 0, 0 }) |> to_seconds
     seconds2 = t2 |> change_offset({ 0, 0 }) |> to_seconds
     seconds1 - seconds2
@@ -157,14 +159,14 @@ defmodule Calendar do
   @doc """
   day of week
   """
-  def day_of_week(DateTime[year: year, month: month, day: day]) do
+  def day_of_week(%DateTime{year: year, month: month, day: day}) do
     C.day_of_the_week({ year, month, day }) |> convert_day_of_week
   end
 
   @doc """
   day of year
   """
-  def day_of_year(DateTime[year: year, month: month, day: day]) do
+  def day_of_year(%DateTime{year: year, month: month, day: day}) do
     day +
       if is_leap?(year) do
         leap_year_yday_offset(month)
@@ -176,37 +178,37 @@ defmodule Calendar do
   @doc """
   year
   """
-  def year(DateTime[year: year]), do: year
+  def year(%DateTime{year: year}), do: year
 
   @doc """
   month
   """
-  def month(DateTime[month: month]), do: month
+  def month(%DateTime{month: month}), do: month
 
   @doc """
   day
   """
-  def day(DateTime[day: day]), do: day
+  def day(%DateTime{day: day}), do: day
 
   @doc """
   hour
   """
-  def hour(DateTime[hour: hour]), do: hour
+  def hour(%DateTime{hour: hour}), do: hour
 
   @doc """
   minute
   """
-  def minute(DateTime[minute: minute]), do: minute
+  def minute(%DateTime{minute: minute}), do: minute
 
   @doc """
   second
   """
-  def second(DateTime[second: second]), do: second
+  def second(%DateTime{second: second}), do: second
 
   @doc """
   leap?
   """
-  def is_leap?(DateTime[year: year]) do
+  def is_leap?(%DateTime{year: year}) do
     C.is_leap_year(year)
   end
 
@@ -252,7 +254,7 @@ defmodule Calendar do
     valid_minute?(min)
   end
 
-  defp seconds_after(time = DateTime[nanosecond: nanosecond, offset: offset], second) do
+  defp seconds_after(time = %DateTime{nanosecond: nanosecond, offset: offset}, second) do
     time = (to_seconds(time) + second)
            |> C.gregorian_seconds_to_datetime
            |> from_tuple
@@ -260,11 +262,11 @@ defmodule Calendar do
     time.update(nanosecond: nanosecond, offset: offset)
   end
 
-  defp to_seconds(time = DateTime[]) do
+  defp to_seconds(time = %DateTime{}) do
     C.datetime_to_gregorian_seconds(to_tuple(time))
   end
 
-  defp do_plus(time = DateTime[], [years, months, days, hours, minutes, seconds]) do
+  defp do_plus(time = %DateTime{}, [years, months, days, hours, minutes, seconds]) do
     s = seconds + minutes * 60 + hours * 60 * 60 + days * 24 * 60 * 60
     time = seconds_after(time, s)
     m = time.month + months
@@ -273,142 +275,142 @@ defmodule Calendar do
     time.update(year: year, month: month)
   end
 
-  defp do_minus(time = DateTime[], list) do
+  defp do_minus(time = %DateTime{}, list) do
     list = Enum.map(list, &(-&1))
     do_plus(time, list)
   end
 
-  defp diff_nano(a = DateTime[], b = DateTime[]) do
+  defp diff_nano(a = %DateTime{}, b = %DateTime{}) do
     ((change_offset(a, { 0, 0 }) |> to_seconds) * 1000000000 + a.nanosecond) -
       ((change_offset(b, { 0, 0 }) |> to_seconds) * 1000000000 + b.nanosecond)
   end
 
-  defp do_format(DateTime[year: year] = t, "YYYY" <> rest) do
-    integer_to_binary(year) <> do_format(t, rest)
+  defp do_format(%DateTime{year: year} = t, "YYYY" <> rest) do
+    Integer.to_string(year) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[year: year] = t, "YY" <> rest) do
+  defp do_format(%DateTime{year: year} = t, "YY" <> rest) do
     just_two_digit(rem(year, 100)) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[month: month] = t, "MMMM" <> rest) do
+  defp do_format(%DateTime{month: month} = t, "MMMM" <> rest) do
     month_name(month) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[month: month] = t, "MMM" <> rest) do
+  defp do_format(%DateTime{month: month} = t, "MMM" <> rest) do
     month_name_s(month) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[month: month] = t, "MM" <> rest) do
+  defp do_format(%DateTime{month: month} = t, "MM" <> rest) do
     just_two_digit(month) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[month: month] = t, "M" <> rest) do
-    integer_to_binary(month) <> do_format(t, rest)
+  defp do_format(%DateTime{month: month} = t, "M" <> rest) do
+    Integer.to_string(month) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[day: day] = t, "dd" <> rest) do
+  defp do_format(%DateTime{day: day} = t, "dd" <> rest) do
     just_two_digit(day) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[day: day] = t, "d" <> rest) do
-    integer_to_binary(day) <> do_format(t, rest)
+  defp do_format(%DateTime{day: day} = t, "d" <> rest) do
+    Integer.to_string(day) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[] = t, "EEEE" <> rest) do
+  defp do_format(%DateTime{} = t, "EEEE" <> rest) do
     weekday_name(day_of_week(t)) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[] = t, "EE" <> rest) do
+  defp do_format(%DateTime{} = t, "EE" <> rest) do
     weekday_name_s(day_of_week(t)) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[hour: hour] = t, "hh" <> rest) do
+  defp do_format(%DateTime{hour: hour} = t, "hh" <> rest) do
     hour = rem(hour, 12)
     just_two_digit(hour) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[hour: hour] = t, "h" <> rest) do
+  defp do_format(%DateTime{hour: hour} = t, "h" <> rest) do
     hour = rem(hour, 12)
-    integer_to_binary(hour) <> do_format(t, rest)
+    Integer.to_string(hour) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[hour: hour] = t, "HH" <> rest) do
+  defp do_format(%DateTime{hour: hour} = t, "HH" <> rest) do
     just_two_digit(hour) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[hour: hour] = t, "H" <> rest) do
-    integer_to_binary(hour) <> do_format(t, rest)
+  defp do_format(%DateTime{hour: hour} = t, "H" <> rest) do
+    Integer.to_string(hour) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[hour: hour] = t, "a" <> rest) do
+  defp do_format(%DateTime{hour: hour} = t, "a" <> rest) do
     label = if hour < 12, do: "AM", else: "PM"
     label <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[minute: minute] = t, "mm" <> rest) do
+  defp do_format(%DateTime{minute: minute} = t, "mm" <> rest) do
     just_two_digit(minute) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[minute: minute] = t, "m" <> rest) do
-    integer_to_binary(minute) <> do_format(t, rest)
+  defp do_format(%DateTime{minute: minute} = t, "m" <> rest) do
+    Integer.to_string(minute) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[second: second] = t, "ss" <> rest) do
+  defp do_format(%DateTime{second: second} = t, "ss" <> rest) do
     just_two_digit(second) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[second: second] = t, "s" <> rest) do
-    integer_to_binary(second) <> do_format(t, rest)
+  defp do_format(%DateTime{second: second} = t, "s" <> rest) do
+    Integer.to_string(second) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[nanosecond: nanosecond] = t, "SSS" <> rest) do
+  defp do_format(%DateTime{nanosecond: nanosecond} = t, "SSS" <> rest) do
     just_three_digit(div(nanosecond, 1000)) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[nanosecond: nanosecond] = t, "SS" <> rest) do
+  defp do_format(%DateTime{nanosecond: nanosecond} = t, "SS" <> rest) do
     just_two_digit(div(nanosecond, 10000)) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[nanosecond: nanosecond] = t, "S" <> rest) do
-    integer_to_binary(div(nanosecond, 100000)) <> do_format(t, rest)
+  defp do_format(%DateTime{nanosecond: nanosecond} = t, "S" <> rest) do
+    Integer.to_string(div(nanosecond, 100000)) <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[offset: { hour, minute }] = t, "ZZ" <> rest) do
+  defp do_format(%DateTime{offset: { hour, minute }} = t, "ZZ" <> rest) do
     sign = if hour >= 0, do: "+", else: "-"
     "#{sign}#{just_two_digit(abs(hour))}:#{just_two_digit(minute)}" <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[offset: { hour, minute }] = t, "Z" <> rest) do
+  defp do_format(%DateTime{offset: { hour, minute }} = t, "Z" <> rest) do
     sign = if hour >= 0, do: "+", else: "-"
     "#{sign}#{just_two_digit(abs(hour))}#{just_two_digit(minute)}" <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[] = t, "''" <> rest) do
+  defp do_format(%DateTime{} = t, "''" <> rest) do
     "'" <> do_format(t, rest)
   end
 
-  defp do_format(DateTime[] = t, "'" <> rest) do
+  defp do_format(%DateTime{} = t, "'" <> rest) do
     do_format_escape(t, rest)
   end
 
-  defp do_format(DateTime[] = t, << h, rest :: binary >>) do
+  defp do_format(%DateTime{} = t, << h, rest :: binary >>) do
     << h, do_format(t, rest) :: binary >>
   end
 
-  defp do_format(DateTime[], <<>>) do
+  defp do_format(%DateTime{}, <<>>) do
     <<>>
   end
 
-  defp do_format_escape(DateTime[] = t, "'" <> rest) do
+  defp do_format_escape(%DateTime{} = t, "'" <> rest) do
     do_format(t, rest)
   end
 
-  defp do_format_escape(DateTime[] = t, << h, rest :: binary >>) do
+  defp do_format_escape(%DateTime{} = t, << h, rest :: binary >>) do
     << h, do_format_escape(t, rest) :: binary >>
   end
 
-  defp do_format_escape(DateTime[], <<>>) do
+  defp do_format_escape(%DateTime{}, <<>>) do
     <<>>
   end
 
@@ -419,7 +421,7 @@ defmodule Calendar do
   end
 
   defp build_datetime(list) do
-    Enum.reduce list, DateTime.new, fn({ key, value }, t) ->
+    Enum.reduce list, %DateTime{}, fn({ key, value }, t) ->
       case build(key, value) do
         { key, value } ->
           apply(DateTime, key, [value, t])
@@ -430,11 +432,11 @@ defmodule Calendar do
   end
 
   def build(:YYYY, value) do
-    { :year, binary_to_integer(value) }
+    { :year, String.to_integer(value) }
   end
 
   def build(:YY, value) do
-    { :year, binary_to_integer("20" <> value) }
+    { :year, String.to_integer("20" <> value) }
   end
 
   def build(:MMMM, value) do
@@ -446,19 +448,19 @@ defmodule Calendar do
   end
 
   def build(:MM, value) do
-    { :month, binary_to_integer(value) }
+    { :month, String.to_integer(value) }
   end
 
   def build(:M, value) do
-    { :month, binary_to_integer(value) }
+    { :month, String.to_integer(value) }
   end
 
   def build(:dd, value) do
-    { :day, binary_to_integer(value) }
+    { :day, String.to_integer(value) }
   end
 
   def build(:d, value) do
-    { :day, binary_to_integer(value) }
+    { :day, String.to_integer(value) }
   end
 
   ## TODO
@@ -472,19 +474,19 @@ defmodule Calendar do
 
   ## TODO: consider AM or PM
   def build(:hh, value) do
-    { :hour, binary_to_integer(value) }
+    { :hour, String.to_integer(value) }
   end
 
   def build(:h, value) do
-    { :hour, binary_to_integer(value) }
+    { :hour, String.to_integer(value) }
   end
 
   def build(:HH, value) do
-    { :hour, binary_to_integer(value) }
+    { :hour, String.to_integer(value) }
   end
 
   def build(:H, value) do
-    { :hour, binary_to_integer(value) }
+    { :hour, String.to_integer(value) }
   end
 
   ## TODO
@@ -493,58 +495,59 @@ defmodule Calendar do
   #end
 
   def build(:mm, value) do
-    { :minute, binary_to_integer(value) }
+    { :minute, String.to_integer(value) }
   end
 
   def build(:m, value) do
-    { :minute, binary_to_integer(value) }
+    { :minute, String.to_integer(value) }
   end
 
   def build(:ss, value) do
-    { :second, binary_to_integer(value) }
+    { :second, String.to_integer(value) }
   end
 
   def build(:s, value) do
-    { :second, binary_to_integer(value) }
+    { :second, String.to_integer(value) }
   end
 
   def build(:SSS, value) do
-    { :nanosecond, binary_to_integer(value <> "000") }
+    { :nanosecond, String.to_integer(value <> "000") }
   end
 
   def build(:SS, value) do
-    { :nanosecond, binary_to_integer(value <> "0000") }
+    { :nanosecond, String.to_integer(value <> "0000") }
   end
 
   def build(:S, value) do
-    { :nanosecond, binary_to_integer(value <> "00000") }
+    { :nanosecond, String.to_integer(value <> "00000") }
   end
 
   def build(:ZZ, value) do
-    tokens = Regex.named_captures(~r/(?<sign>(\+|-))(?<hour>\d{2}):(?<minute>\d{2})/g, value)
+    tokens = Regex.named_captures(~r/(?<sign>(\+|-))(?<hour>\d{2}):(?<minute>\d{2})/, value)
     build_offset(tokens)
   end
 
   def build(:Z, value) do
-    tokens = Regex.named_captures(~r/(?<sign>(\+|-))(?<hour>\d{2})(?<minute>\d{2})/g, value)
+    tokens = Regex.named_captures(~r/(?<sign>(\+|-))(?<hour>\d{2})(?<minute>\d{2})/, value)
     build_offset(tokens)
   end
 
   defp build_offset(tokens) do
     case tokens[:sign] do
       "+" ->
-        { :offset, { binary_to_integer(tokens[:hour]), binary_to_integer(tokens[:minute]) } }
+        { :offset, { String.to_integer(tokens[:hour]), String.to_integer(tokens[:minute]) } }
       "-" ->
-        { :offset, { -1 * binary_to_integer(tokens[:hour]), binary_to_integer(tokens[:minute]) } }
+        { :offset, { -1 * String.to_integer(tokens[:hour]), String.to_integer(tokens[:minute]) } }
     end
   end
 
-  defrecordp :format_flg, [:YYYY, :YY, :MMMM, :MMM, :MM, :M, :dd, :d, :EEEE, :EE, :hh, :h, :HH, :H, :a, :mm, :m, :ss, :s, :SSS, :SS, :S, :ZZ, :Z]
+  require Record
+  Record.defrecordp :format_flg, [:YYYY, :YY, :MMMM, :MMM, :MM, :M, :dd, :d, :EEEE, :EE, :hh, :h, :HH, :H, :a, :mm, :m, :ss, :s, :SSS, :SS, :S, :ZZ, :Z]
 
   def compile_to_regex(formatter) do
     tokens = compile_to_regex(formatter, [])
     seed = form_regex(tokens, format_flg(), "")
-    ("^" <> seed <> "$") |> Regex.compile!("g")
+    ("^" <> seed <> "$") |> Regex.compile!()
   end
 
   defp form_regex([:YYYY|t], format_flg(YYYY: true) = flg, s) do
@@ -872,23 +875,23 @@ defmodule Calendar do
   end
 
   defp just_two_digit(n) when n < 10 do
-    "0" <> integer_to_binary(n)
+    "0" <> Integer.to_string(n)
   end
 
   defp just_two_digit(n) do
-    integer_to_binary(n)
+    Integer.to_string(n)
   end
 
   defp just_three_digit(n) when n < 10 do
-    "00" <> integer_to_binary(n)
+    "00" <> Integer.to_string(n)
   end
 
   defp just_three_digit(n) when n < 100 do
-    "0" <> integer_to_binary(n)
+    "0" <> Integer.to_string(n)
   end
 
   defp just_three_digit(n) do
-    integer_to_binary(n)
+    Integer.to_string(n)
   end
 
   defp offset_to_min({ hour, min }) do
@@ -1002,8 +1005,8 @@ end
 defimpl Inspect, for: DateTime do
   import Kernel, except: [inspect: 2]
 
-  def inspect(DateTime[year: year, month: month, day: day,
-                       hour: hour, minute: minute, second: second, offset: offset], _) do
+  def inspect(%DateTime{year: year, month: month, day: day,
+                       hour: hour, minute: minute, second: second, offset: offset}, _) do
     ([year, just_two_digit(month), just_two_digit(day)] |> Enum.join("-")) <>
     " " <>
     ([just_two_digit(hour), just_two_digit(minute), just_two_digit(second)] |> Enum.join(":")) <>
@@ -1016,10 +1019,10 @@ defimpl Inspect, for: DateTime do
   end
 
   defp just_two_digit(n) when n < 10 do
-    "0" <> integer_to_binary(n)
+    "0" <> Integer.to_string(n)
   end
 
   defp just_two_digit(n) do
-    integer_to_binary(n)
+    Integer.to_string(n)
   end
 end
