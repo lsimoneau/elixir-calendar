@@ -31,9 +31,9 @@ defmodule Calendar do
     { _megasecond, _second, microsecond } = now
     offset = calc_offset
 
-    DateTime.new [year: year, month: month, day: day,
-                  hour: hour, minute: minute, second: second,
-                  nanosecond: microsecond * 1000, offset: offset]
+    %DateTime{year: year, month: month, day: day,
+              hour: hour, minute: minute, second: second,
+              nanosecond: microsecond * 1000, offset: offset}
   end
 
   @doc """
@@ -130,7 +130,7 @@ defmodule Calendar do
   def change_offset(time = %DateTime{offset: offset}, new_o) do
     min = round(offset_to_min(new_o) - offset_to_min(offset))
     time = plus(time, minutes: min)
-    time.update(offset: new_o)
+    %{time | offset: new_o}
   end
 
   @doc """
@@ -259,7 +259,7 @@ defmodule Calendar do
            |> C.gregorian_seconds_to_datetime
            |> from_tuple
 
-    time.update(nanosecond: nanosecond, offset: offset)
+    %{time | nanosecond: nanosecond, offset: offset}
   end
 
   defp to_seconds(time = %DateTime{}) do
@@ -272,7 +272,7 @@ defmodule Calendar do
     m = time.month + months
     month = rem(m - 1, 12) + 1
     year = time.year + years + div(m - 1, 12)
-    time.update(year: year, month: month)
+    %{time | year: year, month: month}
   end
 
   defp do_minus(time = %DateTime{}, list) do
@@ -424,68 +424,68 @@ defmodule Calendar do
     Enum.reduce list, %DateTime{}, fn({ key, value }, t) ->
       case build(key, value) do
         { key, value } ->
-          apply(DateTime, key, [value, t])
+          Map.put(t, key, value)
         nil ->
           t
       end
     end
   end
 
-  def build(:YYYY, value) do
+  def build("YYYY", value) do
     { :year, String.to_integer(value) }
   end
 
-  def build(:YY, value) do
+  def build("YY", value) do
     { :year, String.to_integer("20" <> value) }
   end
 
-  def build(:MMMM, value) do
+  def build("MMMM", value) do
     { :month, month_num(value) }
   end
 
-  def build(:MMM, value) do
+  def build("MMM", value) do
     { :month, month_num_s(value) }
   end
 
-  def build(:MM, value) do
+  def build("MM", value) do
     { :month, String.to_integer(value) }
   end
 
-  def build(:M, value) do
+  def build("M", value) do
     { :month, String.to_integer(value) }
   end
 
-  def build(:dd, value) do
+  def build("dd", value) do
     { :day, String.to_integer(value) }
   end
 
-  def build(:d, value) do
+  def build("d", value) do
     { :day, String.to_integer(value) }
   end
 
   ## TODO
-  def build(:EEEE, _value) do
+  def build("EEEE", _value) do
     nil
   end
 
-  def build(:EE, _value) do
+  def build("EE", _value) do
     nil
   end
 
   ## TODO: consider AM or PM
-  def build(:hh, value) do
+  def build("hh", value) do
     { :hour, String.to_integer(value) }
   end
 
-  def build(:h, value) do
+  def build("h", value) do
     { :hour, String.to_integer(value) }
   end
 
-  def build(:HH, value) do
+  def build("HH", value) do
     { :hour, String.to_integer(value) }
   end
 
-  def build(:H, value) do
+  def build("H", value) do
     { :hour, String.to_integer(value) }
   end
 
@@ -494,50 +494,50 @@ defmodule Calendar do
   #  nil
   #end
 
-  def build(:mm, value) do
+  def build("mm", value) do
     { :minute, String.to_integer(value) }
   end
 
-  def build(:m, value) do
+  def build("m", value) do
     { :minute, String.to_integer(value) }
   end
 
-  def build(:ss, value) do
+  def build("ss", value) do
     { :second, String.to_integer(value) }
   end
 
-  def build(:s, value) do
+  def build("s", value) do
     { :second, String.to_integer(value) }
   end
 
-  def build(:SSS, value) do
+  def build("SSS", value) do
     { :nanosecond, String.to_integer(value <> "000") }
   end
 
-  def build(:SS, value) do
+  def build("SS", value) do
     { :nanosecond, String.to_integer(value <> "0000") }
   end
 
-  def build(:S, value) do
+  def build("S", value) do
     { :nanosecond, String.to_integer(value <> "00000") }
   end
 
-  def build(:ZZ, value) do
+  def build("ZZ", value) do
     tokens = Regex.named_captures(~r/(?<sign>(\+|-))(?<hour>\d{2}):(?<minute>\d{2})/, value)
     build_offset(tokens)
   end
 
-  def build(:Z, value) do
+  def build("Z", value) do
     tokens = Regex.named_captures(~r/(?<sign>(\+|-))(?<hour>\d{2})(?<minute>\d{2})/, value)
     build_offset(tokens)
   end
 
   defp build_offset(tokens) do
-    case tokens[:sign] do
+    case tokens["sign"] do
       "+" ->
-        { :offset, { String.to_integer(tokens[:hour]), String.to_integer(tokens[:minute]) } }
+        { :offset, { String.to_integer(tokens["hour"]), String.to_integer(tokens["minute"]) } }
       "-" ->
-        { :offset, { -1 * String.to_integer(tokens[:hour]), String.to_integer(tokens[:minute]) } }
+        { :offset, { -1 * String.to_integer(tokens["hour"]), String.to_integer(tokens["minute"]) } }
     end
   end
 
